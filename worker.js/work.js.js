@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
 
 const app = document.createElement("div");
 
@@ -228,8 +228,7 @@ sendMessage();
 
 recognition.start();
 };
-
-});
+})();
     
 
   
