@@ -1,220 +1,234 @@
 (function () {
+  const style = document.createElement("style");
+  style.textContent = `
+    #nova {
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 18px;
+      border-radius: 18px;
+      background: #171b2e;
+      color: white;
+      font-family: Arial;
+    }
+    #nova h2 { text-align: center; color: #8da5ff; }
+    #chat {
+      height: 300px;
+      overflow-y: auto;
+      background: #101426;
+      padding: 12px;
+      border-radius: 12px;
+    }
+    .msg { margin: 10px 0; line-height: 1.5; }
+    .user { color: #8da5ff; }
+    .bot { color: #8ff0c5; }
+    #nova input, #nova select {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 9px;
+      border: none;
+    }
+    #nova button {
+      padding: 11px;
+      margin: 5px 2px;
+      border: none;
+      border-radius: 9px;
+      background: #7189ff;
+      color: white;
+      font-weight: bold;
+    }
+  `;
+  document.head.appendChild(style);
 
-const app = document.createElement("div");
+  const app = document.createElement("div");
+  app.id = "nova";
+  app.innerHTML = `
+    <h2>✨ NOVA AI</h2>
+    <p style="text-align:center">Your Smart AI Assistant</p>
+    <select id="voiceMode">
+      <option value="auto">🌐 Auto Detect Language</option>
+      <option value="english">🇬🇧 Full English Voice</option>
+      <option value="hinglish">🇮🇳 Hinglish Voice</option>
+    </select>
+    <div id="chat">
+      <div class="msg bot">NOVA: Hello! I'm NOVA AI. Ask me anything!</div>
+    </div>
+    <input id="question" placeholder="Ask me anything...">
+    <button id="send">Send</button>
+    <button id="mic">🎤 Speak</button>
+    <button id="replay">🔊 Replay</button>
+  `;
+  document.body.appendChild(app);
 
-app.innerHTML = `
+  const chat = document.getElementById("chat");
+  const input = document.getElementById("question");
+  const mode = document.getElementById("voiceMode");
+  let lastAnswer = "";
 
-<style>  
-#nova {  
-  background:#101522;  
-  color:white;  
-  padding:20px;  
-  border-radius:15px;  
-  font-family:Arial;  
-  max-width:750px;  
-  margin:20px auto;  
-}  
-#nova h1 {  
-  color:#00d9ff;  
-  text-align:center;  
-}  
-#nova .chat {  
-  height:350px;  
-  overflow-y:auto;  
-  background:#1c2535;  
-  padding:15px;  
-  border-radius:12px;  
-}  
-#nova .message {  
-  padding:12px;  
-  margin:10px 0;  
-  border-radius:10px;  
-  line-height:1.5;  
-  overflow-wrap:anywhere;  
-}  
-#nova .user {background:#245b80;text-align:right;}  
-#nova .bot {background:#303b50;}  
-#nova input {  
-  width:65%;  
-  padding:13px;  
-  border-radius:8px;  
-  border:0;  
-}  
-#nova button {  
-  padding:13px;  
-  border:0;  
-  border-radius:8px;  
-  background:#00d9ff;  
-  cursor:pointer;  
-  margin:5px;  
-}  
-</style>  <div id="nova">  
-<h1>✦ NOVA AI</h1>  
-<p style="text-align:center">Your Smart Digital Assistant</p>  <div class="chat" id="chat">  
-<div class="message bot">  
-Hello! I'm NOVA AI. Ask me anything about learning, vocabulary, science or technology!  
-</div>  
-</div>  <br>  <input id="question" placeholder="Ask NOVA anything...">  
-<button id="send">Send</button>  
-<button id="voice">🎤</button>  <p>  
-<button data-q="Tell me a joke">Joke</button>  
-<button data-q="Tell me a fact">Facts</button>  
-<button data-q="Give me a riddle">Riddle</button>  
-</p>  
-</div>  
-`;  document.body.appendChild(app);
+  function addMessage(text, type) {
+    const div = document.createElement("div");
+    div.className = "msg " + type;
+    div.textContent = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
 
-const chat = document.getElementById("chat");
-const input = document.getElementById("question");
+  function detectLanguage(text) {
+    if (mode.value === "english") return "english";
+    if (mode.value === "hinglish") return "hinglish";
 
-const dictionary = {
-arrogant:"Thinking you are superior to others.",
-beauty:"A quality that creates admiration or pleasure.",
-confidence:"Belief in your own abilities.",
-humble:"Being modest and not thinking you are better than others.",
-ambitious:"Having strong goals and wanting to achieve them.",
-empathy:"Understanding another person's feelings.",
-discipline:"The ability to control your actions and stay consistent.",
-intelligent:"Having the ability to learn, understand and solve problems.",
-optimistic:"Expecting positive things to happen.",
-introvert:"Someone who often prefers quieter environments and smaller social interactions.",
-extrovert:"Someone who often enjoys social interactions."
-};
+    return /kya|kaise|kyun|hai|hain|mera|meri|mujhe|batao|karo|krdo|acha|accha|nahi|haan|aur|matlab|iska|meaning|hota|h|hu|ho|tum|aap|mujhe|chahiye|kuch|ka|ki|ke/i.test(text)
+      ? "hinglish" : "english";
+  }
 
-const facts = [
-"Octopuses have three hearts.",
-"Jupiter is the largest planet in our solar system.",
-"Sharks existed before trees.",
-"The Moon is slowly moving away from Earth."
-];
+  function getAnswer(question) {
+    const q = question.toLowerCase().trim();
+    const lang = detectLanguage(question);
 
-const jokes = [
-"Why was the computer cold? Because it left its Windows open!",
-"Why did the student eat his homework? Because it was a piece of cake!",
-"What do computers eat? Microchips!"
-];
+    const answers = {
+      arrogant: ["Arrogant means someone who thinks they are better than others.", "Arrogant ka matlab hota hai ghamandi, yani jo khud ko dusron se superior samajhta hai."],
+      beauty: ["Beauty means the quality of being beautiful.", "Beauty ka matlab hota hai khoobsurati."],
+      confidence: ["Confidence means believing in yourself and your abilities.", "Confidence ka matlab hai khud par bharosa rakhna."],
+      humble: ["Humble means being modest and not thinking you are superior.", "Humble ka matlab hai vinamra hona, bina attitude ke rehna."],
+      ambitious: ["Ambitious means having strong goals and wanting to achieve them.", "Ambitious ka matlab hai bade goals rakhna aur unhe achieve karne ki strong desire hona."],
+      empathy: ["Empathy means understanding another person's feelings.", "Empathy ka matlab hai dusron ki feelings ko samajhna."],
+      discipline: ["Discipline means controlling your actions and following good habits.", "Discipline ka matlab hai apne actions control karna aur achhi habits follow karna."],
+      intelligent: ["Intelligent means being good at learning and understanding.", "Intelligent ka matlab hai samajhdaar aur tez dimaag wala."],
+      optimistic: ["Optimistic means expecting positive things.", "Optimistic ka matlab hai positive soch rakhna."],
+      introvert: ["An introvert usually enjoys quiet environments and smaller social groups.", "Introvert woh hota hai jise quiet environment aur chhota social circle pasand hota hai."],
+      extrovert: ["An extrovert usually enjoys socialising and meeting people.", "Extrovert woh hota hai jise logon se milna aur baatein karna pasand hota hai."]
+    };
 
-const riddles = [
-"What gets wetter as it dries? A towel.",
-"What has keys but cannot open locks? A piano.",
-"What has a face and hands but no arms? A clock."
-];
+    for (let word in answers) {
+      if (new RegExp("\\\\b" + word + "\\\\b", "i").test(q)) {
+        return answers[word][lang === "hinglish" ? 1 : 0];
+      }
+    }
 
-function answer(q) {
+    if (/hello|hi|hey/.test(q))
+      return lang === "hinglish" ? "Hey! Kya haal hai? NOVA AI is ready!" : "Hello! How can I help you today?";
 
-q = q.toLowerCase().trim();
+    if (/how are you/.test(q))
+      return "I'm doing great! Ready to help you.";
 
-if (/^(hi|hello|hey|hii)\b/.test(q))
-return "Hello! Welcome to NOVA AI. What would you like to explore?";
+    if (/joke|chutkula|funny/.test(q))
+      return lang === "hinglish"
+        ? "Teacher: Homework kahan hai? Student: Sir, homework bhi work from home kar raha hai!"
+        : "Teacher: Why was the computer cold? Because it left its Windows open!";
 
-if (q.includes("your name"))
-return "I'm NOVA AI, your smart digital assistant.";
+    if (/riddle|paheli/.test(q))
+      return lang === "hinglish"
+        ? "Paheli: Aisi kaunsi cheez hai jo tootne par awaaz nahi karti? Answer: Promise!"
+        : "Riddle: What has keys but cannot open locks? Answer: A piano!";
 
-if (q.includes("how are you"))
-return "I'm working perfectly! What can I help you with?";
+    if (/fact|interesting/.test(q))
+      return lang === "hinglish"
+        ? "Interesting fact: Octopus ke three hearts hote hain!"
+        : "Interesting fact: An octopus has three hearts!";
 
-if (q.includes("time"))
-return new Date().toLocaleTimeString();
+    if (/photosynthesis/.test(q))
+      return lang === "hinglish"
+        ? "Photosynthesis ek process hai jisme plants sunlight, water aur carbon dioxide use karke food banate hain."
+        : "Photosynthesis is the process by which plants use sunlight, water and carbon dioxide to make food.";
 
-if (q.includes("date") || q.includes("today"))
-return new Date().toDateString();
+    if (/gravity/.test(q))
+      return lang === "hinglish"
+        ? "Gravity ek force hai jo objects ko ek dusre ki taraf attract karti hai."
+        : "Gravity is the force that attracts objects towards each other.";
 
-if (q.includes("joke"))
-return jokes[Math.floor(Math.random()*jokes.length)];
+    if (/artificial intelligence|\\bai\\b/.test(q))
+      return lang === "hinglish"
+        ? "AI yani Artificial Intelligence, machines ko human-like tasks perform karne ki ability deta hai."
+        : "Artificial Intelligence is technology that enables machines to perform tasks that usually require human intelligence.";
 
-if (q.includes("fact"))
-return facts[Math.floor(Math.random()*facts.length)];
+    if (/capital of india/.test(q))
+      return "The capital of India is New Delhi.";
 
-if (q.includes("riddle"))
-return riddles[Math.floor(Math.random()*riddles.length)];
+    if (/largest ocean/.test(q))
+      return "The Pacific Ocean is the largest ocean in the world.";
 
-if (q.includes("meaning of")) {
-let word = q.split("meaning of").pop().trim().replace(/[?.!]/g,"");
-return dictionary[word] || "I don't know this word yet. Try another word.";
-}
+    if (/javascript/.test(q))
+      return lang === "hinglish"
+        ? "JavaScript ek programming language hai jo websites ko interactive banati hai."
+        : "JavaScript is a programming language used to make websites interactive.";
 
-if (dictionary[q.replace(/[?.!]/g,"")])
-return dictionary[q.replace(/[?.!]/g,"")];
+    if (/html/.test(q))
+      return lang === "hinglish"
+        ? "HTML ka full form HyperText Markup Language hai. Isse webpages ka structure banta hai."
+        : "HTML stands for HyperText Markup Language. It is used to structure web pages.";
 
-if (q.includes("photosynthesis"))
-return "Photosynthesis is the process by which green plants use sunlight, water and carbon dioxide to make food.";
+    if (/thank/.test(q))
+      return lang === "hinglish" ? "You're welcome! Kabhi bhi pooch sakte ho." : "You're welcome! Happy to help.";
 
-if (q.includes("artificial intelligence") || q.includes("what is ai"))
-return "Artificial Intelligence is technology that enables computers to perform tasks that normally require human intelligence.";
+    if (/time|date/.test(q))
+      return lang === "hinglish"
+        ? "Abhi date aur time tumhare device par available hai."
+        : "You can check the current date and time on your device.";
 
-if (q.includes("gravity"))
-return "Gravity is the force of attraction between objects. It keeps us on Earth's surface.";
+    return lang === "hinglish"
+      ? "Interesting question! Is topic ke baare mein mujhe abhi limited information hai. Thoda specific poochho!"
+      : "That's an interesting question! I don't have enough information about that yet. Try asking something more specific!";
+  }
 
-if (q.includes("javascript"))
-return "JavaScript is a programming language used to create interactive websites.";
+  function speak(text) {
+    if (!("speechSynthesis" in window)) {
+      addMessage("Voice output is not supported in this browser.", "bot");
+      return;
+    }
 
-if (q.includes("html"))
-return "HTML stands for HyperText Markup Language. It structures web pages.";
+    window.speechSynthesis.cancel();
 
-if (q.includes("capital of india"))
-return "New Delhi is the capital of India.";
+    const lang = detectLanguage(input.value);
+    const speech = new SpeechSynthesisUtterance(text);
 
-if (q.includes("largest ocean"))
-return "The Pacific Ocean is the largest ocean.";
+    speech.lang = lang === "hinglish" ? "hi-IN" : "en-IN";
+    speech.rate = 0.95;
+    speech.pitch = 1;
 
-if (q.includes("thank"))
-return "You're welcome! Happy to help.";
+    window.speechSynthesis.speak(speech);
+  }
 
-return "Interesting question! I don't have a reliable answer in my current knowledge database. Try asking about science, technology or vocabulary.";
-}
+  function sendMessage() {
+    const question = input.value.trim();
+    if (!question) return;
 
-function sendMessage() {
+    addMessage("You: " + question, "user");
 
-let q = input.value.trim();
+    const answer = getAnswer(question);
+    lastAnswer = answer;
 
-if (!q) return;
+    addMessage("NOVA: " + answer, "bot");
 
-let user = document.createElement("div");
-user.className = "message user";
-user.textContent = q;
-chat.appendChild(user);
+    speak(answer);
+    input.value = "";
+  }
 
-input.value = "";
+  document.getElementById("send").onclick = sendMessage;
 
-let bot = document.createElement("div");
-bot.className = "message bot";
-bot.textContent = answer(q);
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") sendMessage();
+  });
 
-chat.appendChild(bot);
+  document.getElementById("replay").onclick = function () {
+    if (lastAnswer) speak(lastAnswer);
+  };
 
-chat.scrollTop = chat.scrollHeight;
-}
+  document.getElementById("mic").onclick = function () {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-document.getElementById("send").onclick = sendMessage;
+    if (!Recognition) {
+      addMessage("Voice input is not supported in this browser.", "bot");
+      return;
+    }
 
-input.addEventListener("keydown", function(e) {
-if (e.key === "Enter") sendMessage();
-});
-
-document.querySelectorAll("#nova button[data-q]").forEach(button => {
-button.onclick = function() {
-input.value = button.dataset.q;
-sendMessage();
-};
-});
-
-document.getElementById("voice").onclick = function() {
-
-const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-if (!Speech) {
-alert("Voice input is not supported in this browser.");
-return;
-}
-
-const recognition = new Speech();
-recognition.lang = "en-IN";
-
-recognition.onresult = function(event) {
-input.value = event.results[0][0].transcript;
-sendMessage();
-};
-
-recognition.start();
-};
+    const recognition = new Recognition();
+    recognition.lang = mode.value === "hinglish" ? "hi-IN" : "en-IN";
+    recognition.onresult = function (event) {
+      input.value = event.results[0][0].transcript;
+      sendMessage();
+    };
+    recognition.start();
+  };
 })();
+
